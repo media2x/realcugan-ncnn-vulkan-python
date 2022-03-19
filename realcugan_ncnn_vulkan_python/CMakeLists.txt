@@ -306,6 +306,7 @@ swig_add_library(
 
 add_dependencies(realcugan_ncnn_vulkan_wrapper generate-spirv)
 target_compile_options(realcugan_ncnn_vulkan_wrapper PUBLIC -fexceptions)
+set_property(TARGET realcugan_ncnn_vulkan_wrapper PROPERTY CXX_STANDARD 11)
 
 # set output directory of the .so file
 if(CALL_FROM_SETUP_PY)
