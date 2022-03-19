@@ -1,0 +1,254 @@
+name: Release
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  setup:
+    if: github.event.base_ref == "refs/heads/master"
+    runs-on: ubuntu-latest
+    outputs:
+      APPNAME: ${{ steps.get_appname.outputs.APPNAME }}
+      VERSION: ${{ steps.get_version.outputs.VERSION }}
+    steps:
+      - name: Get app name
+        id: get_appname
+        run: echo ::set-output name=APPNAME::${{ github.event.repository.name }}
+      - name: Get version
+        id: get_version
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+
+  create-release:
+    needs:
+      - setup
+    name: Create Relase
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ needs.setup.outputs.VERSION }}
+          release_name: Release ${{ needs.setup.outputs.VERSION }}
+          draft: true
+          prerelease: false
+
+  windows:
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+
+    needs: [setup, create-release]
+
+    runs-on: windows-latest
+    env:
+      PACKAGENAME: ${{ needs.setup.outputs.APPNAME }}-${{ needs.setup.outputs.VERSION }}-windows
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: cache-vulkansdk
+        id: cache-vulkansdk
+        uses: actions/cache@v1
+        with:
+          path: "VulkanSDK"
+          key: VulkanSDK-1.2.162.0-Installer
+      - name: vulkansdk
+        if: steps.cache-vulkansdk.outputs.cache-hit != 'true'
+        run: |
+          Invoke-WebRequest -Uri https://sdk.lunarg.com/sdk/download/1.2.162.0/windows/VulkanSDK-1.2.162.0-Installer.exe?Human=true -OutFile VulkanSDK-1.2.162.0-Installer.exe
+          7z x -aoa ./VulkanSDK-1.2.162.0-Installer.exe -oVulkanSDK
+          Remove-Item .\VulkanSDK\Demos, .\VulkanSDK\Samples, .\VulkanSDK\Third-Party, .\VulkanSDK\Tools, .\VulkanSDK\Tools32, .\VulkanSDK\Bin32, .\VulkanSDK\Lib32 -Recurse
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - name: Check Python version
+        run: |
+          python --version
+      - name: Install dependencies
+        run: |
+          pip install build
+      - name: Build
+        run: |
+          $env:VULKAN_SDK="$(pwd)\VulkanSDK"
+          $env:CMAKE_FLAGS="-DPY_VERSION=${{ matrix.python-version }}"
+          python -m build -w .
+      - name: Package
+        run: |
+          mkdir ${{ env.PACKAGENAME }}
+          Copy-Item -Verbose -Path "README.md" -Destination "${{ env.PACKAGENAME }}"
+          Copy-Item -Verbose -Path "LICENSE" -Destination "${{ env.PACKAGENAME }}"
+          Copy-Item -Verbose -Recurse -Path dist\* -Destination "${{ env.PACKAGENAME }}"
+          7z a -r ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip ${{ env.PACKAGENAME }}
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip
+          asset_name: ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip
+          asset_content_type: application/zip
+
+  ubuntu:
+    needs: [setup, create-release]
+    runs-on: ubuntu-latest
+    env:
+      PACKAGENAME: ${{ needs.setup.outputs.APPNAME }}-${{ needs.setup.outputs.VERSION }}-ubuntu
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvulkan-dev glslang-dev glslang-tools
+          pip install build
+      - name: Build
+        run: |
+          python -m build -w .
+      - name: Package
+        run: |
+          mkdir -p ${{ env.PACKAGENAME }}
+          cp README.md LICENSE ${{ env.PACKAGENAME }}
+          cp -r dist/* ${{ env.PACKAGENAME }}
+          zip -9 -r ${{ env.PACKAGENAME }}.zip ${{ env.PACKAGENAME }}
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ env.PACKAGENAME }}.zip
+          asset_name: ${{ env.PACKAGENAME }}.zip
+          asset_content_type: application/zip
+
+  ubuntu-1804:
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+    needs: [setup, create-release]
+    runs-on: ubuntu-18.04
+    env:
+      PACKAGENAME: ${{ needs.setup.outputs.APPNAME }}-${{ needs.setup.outputs.VERSION }}-ubuntu1804
+      DEBIAN_FRONTEND: noninteractive
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+
+      - name: Check Python version
+        run: |
+          python --version
+
+      - name: cache-vulkansdk
+        id: cache-vulkansdk
+        uses: actions/cache@v1
+        with:
+          path: "1.2.162.0"
+          key: vulkansdk-linux-x86_64-1.2.162.0
+      - name: vulkansdk
+        if: steps.cache-vulkansdk.outputs.cache-hit != 'true'
+        run: |
+          wget https://sdk.lunarg.com/sdk/download/1.2.162.0/linux/vulkansdk-linux-x86_64-1.2.162.0.tar.gz?Human=true -O vulkansdk-linux-x86_64-1.2.162.0.tar.gz
+          tar -xf vulkansdk-linux-x86_64-1.2.162.0.tar.gz
+          rm -rf 1.2.162.0/source 1.2.162.0/samples
+          find 1.2.162.0 -type f | grep -v -E 'vulkan|glslang' | xargs rm
+
+      - name: Install dependencies
+        run: |
+          pip install build
+      - name: Build
+        run: |
+          export VULKAN_SDK=`pwd`/1.2.162.0/x86_64
+          export CMAKE_FLAGS="-DPY_VERSION=${{ matrix.python-version }}"
+          python -m build -w .
+      - name: Package
+        run: |
+          mkdir -p ${{ env.PACKAGENAME }}
+          cp README.md LICENSE ${{ env.PACKAGENAME }}
+          cp -r dist/* ${{ env.PACKAGENAME }}
+          zip -9 -r ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip ${{ env.PACKAGENAME }}
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip
+          asset_name: ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip
+          asset_content_type: application/zip
+
+  macos:
+    needs: [setup, create-release]
+    strategy:
+      matrix:
+        python-version: ["3.6", "3.7", "3.8", "3.9", "3.10"]
+    env:
+      PACKAGENAME: ${{ needs.setup.outputs.APPNAME }}-${{ needs.setup.outputs.VERSION }}-macos
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: cache-vulkansdk
+        id: cache-vulkansdk
+        uses: actions/cache@v1
+        with:
+          path: "vulkansdk-macos-1.2.162.0"
+          key: vulkansdk-macos-1.2.162.0
+      - name: vulkansdk
+        if: steps.cache-vulkansdk.outputs.cache-hit != 'true'
+        run: |
+          wget https://sdk.lunarg.com/sdk/download/1.2.162.0/mac/vulkansdk-macos-1.2.162.0.dmg?Human=true -O vulkansdk-macos-1.2.162.0.dmg
+          hdiutil attach vulkansdk-macos-1.2.162.0.dmg
+          cp -r /Volumes/vulkansdk-macos-1.2.162.0 .
+          rm -rf vulkansdk-macos-1.2.162.0/Applications
+          find vulkansdk-macos-1.2.162.0 -type f | grep -v -E 'vulkan|glslang|MoltenVK' | xargs rm
+          hdiutil detach /Volumes/vulkansdk-macos-1.2.162.0
+      - uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: x64
+      - name: Check Python version
+        run: |
+          python --version
+      - name: Install dependencies
+        run: |
+          pip install build
+      - name: Build
+        run: |
+          export VULKAN_SDK=`pwd`/vulkansdk-macos-1.2.162.0/macOS
+          export CMAKE_FLAGS="-DUSE_STATIC_MOLTENVK=ON -DCMAKE_OSX_ARCHITECTURES="x86_64" \
+          -DVulkan_INCLUDE_DIR=`pwd`/vulkansdk-macos-1.2.162.0/MoltenVK/include \
+          -DVulkan_LIBRARY=`pwd`/vulkansdk-macos-1.2.162.0/MoltenVK/MoltenVK.xcframework/macos-arm64_x86_64/libMoltenVK.a \
+          -DPY_VERSION=${{ matrix.python-version }}"
+          python -m build -w .
+      - name: Package
+        run: |
+          mkdir -p ${{ env.PACKAGENAME }}
+          cp README.md LICENSE ${{ env.PACKAGENAME }}
+          cp -r dist/* ${{ env.PACKAGENAME }}
+          zip -9 -r ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip ${{ env.PACKAGENAME }}
+      - name: Upload
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip
+          asset_name: ${{ env.PACKAGENAME }}_${{ matrix.python-version }}.zip
+          asset_content_type: application/zip
