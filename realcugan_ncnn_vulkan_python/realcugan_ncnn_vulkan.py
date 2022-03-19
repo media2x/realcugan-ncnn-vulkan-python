@@ -43,6 +43,7 @@ class Realcugan:
         tilesize: int = 0,
         syncgap: int = 0,
         model: str = "models-se",
+        **_kwargs,
     ):
         # check arguments' validity
         assert gpuid >= -1, "gpuid must >= -1"
