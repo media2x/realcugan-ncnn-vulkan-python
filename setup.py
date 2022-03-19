@@ -17,7 +17,9 @@ setuptools.setup(
         cmake_build_extension.CMakeExtension(
             name="realcugan-ncnn-vulkan-python",
             install_prefix="realcugan_ncnn_vulkan_python",
-            write_top_level_init="from .realcugan_ncnn_vulkan import Realcugan, RealCUGAN",
+            write_top_level_init=(
+                "from .realcugan_ncnn_vulkan import Realcugan, RealCUGAN, wrapped"
+            ),
             source_dir=str(
                 pathlib.Path(__file__).parent / "realcugan_ncnn_vulkan_python"
             ),
