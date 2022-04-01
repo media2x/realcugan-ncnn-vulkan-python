@@ -38,10 +38,10 @@ class Realcugan:
         gpuid: int = 0,
         tta_mode: bool = False,
         num_threads: int = 1,
-        noise: int = 0,
+        noise: int = -1,
         scale: int = 2,
         tilesize: int = 0,
-        syncgap: int = 0,
+        syncgap: int = 3,
         model: str = "models-se",
         **_kwargs,
     ):
