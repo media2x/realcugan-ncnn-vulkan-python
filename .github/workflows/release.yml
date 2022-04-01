@@ -6,7 +6,7 @@ on:
 
 jobs:
   setup:
-    if: github.event.base_ref == "refs/heads/master"
+    if: github.event.base_ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     outputs:
       APPNAME: ${{ steps.get_appname.outputs.APPNAME }}
