@@ -17,7 +17,7 @@ The reason why MacOS ARM64 build is not available is that it needs ARM Python De
 get it on Github's MacOS x64 VM. Moreover, I don't have a Mac.
 
 - **However, for Linux (Like Ubuntu 18.04) with an older GLIBC (version < 2.29), you may try to use the ubuntu-1804 release or just compile it on your own.**
-- **Windows release is not working for all python version. The version of Windows build is for python 3.9. This is a known issue: [ImportError: DLL load failed while importing \_rife_ncnn_vulkan_wrapper: The specified module could not be found.](https://github.com/ArchieMeng/rife-ncnn-vulkan-python/issues/1)**
+- ~~**Windows release is not working for all python version. The version of Windows build is for python 3.9. This is a known issue: [ImportError: DLL load failed while importing \_rife_ncnn_vulkan_wrapper: The specified module could not be found.](https://github.com/ArchieMeng/rife-ncnn-vulkan-python/issues/1)**~~
 
 Update: it has been uploaded to PyPI, and you can install it with pip now.
 
