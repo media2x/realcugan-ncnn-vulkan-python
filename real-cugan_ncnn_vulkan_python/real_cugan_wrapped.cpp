@@ -1,4 +1,4 @@
-#include "realcugan_wrapped.h"
+#include "real_cugan_wrapped.h"
 
 int RealCUGANWrapped::process(const Image &inimage, Image &outimage) const
 {

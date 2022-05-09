@@ -15,13 +15,13 @@ cmake_flags.extend(os.environ.get("CMAKE_FLAGS", "").split())
 setuptools.setup(
     ext_modules=[
         cmake_build_extension.CMakeExtension(
-            name="realcugan-ncnn-vulkan-python",
-            install_prefix="realcugan_ncnn_vulkan_python",
+            name="real_cugan-ncnn-vulkan-python",
+            install_prefix="real_cugan_ncnn_vulkan_python",
             write_top_level_init=(
-                "from .realcugan_ncnn_vulkan import Realcugan, RealCUGAN, wrapped"
+                "from .real_cugan_ncnn_vulkan import Realcugan, RealCUGAN, wrapped"
             ),
             source_dir=str(
-                pathlib.Path(__file__).parent / "realcugan_ncnn_vulkan_python"
+                pathlib.Path(__file__).parent / "real_cugan_ncnn_vulkan_python"
             ),
             cmake_configure_options=cmake_flags,
         )

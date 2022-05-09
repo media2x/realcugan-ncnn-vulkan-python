@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Name: RealCUGAN ncnn Vulkan Python wrapper
+Name: Real-CUGAN ncnn Vulkan Python wrapper
 Author: K4YT3X
 Date Created: March 19, 2022
 Last Modified: March 19, 2022
@@ -14,9 +14,9 @@ import sys
 from PIL import Image
 
 if __package__ is None:
-    import realcugan_ncnn_vulkan_wrapper as wrapped
+    import real_cugan_ncnn_vulkan_wrapper as wrapped
 else:
-    wrapped = importlib.import_module(f"{__package__}.realcugan_ncnn_vulkan_wrapper")
+    wrapped = importlib.import_module(f"{__package__}.real_cugan_ncnn_vulkan_wrapper")
 
 
 class Realcugan:
@@ -53,16 +53,16 @@ class Realcugan:
         assert syncgap in range(4), "syncgap must be 0-3"
         assert num_threads >= 1, "num_threads must be a positive integer"
 
-        self._realcugan_object = wrapped.RealCUGANWrapped(gpuid, tta_mode, num_threads)
+        self._real_cugan_object = wrapped.RealCUGANWrapped(gpuid, tta_mode, num_threads)
         self._model = model
         self._gpuid = gpuid
-        self._realcugan_object.noise = noise
-        self._realcugan_object.scale = scale
-        self._realcugan_object.tilesize = (
+        self._real_cugan_object.noise = noise
+        self._real_cugan_object.scale = scale
+        self._real_cugan_object.tilesize = (
             self._get_tilesize() if tilesize <= 0 else tilesize
         )
-        self._realcugan_object.prepadding = self._get_prepadding()
-        self._realcugan_object.syncgap = syncgap
+        self._real_cugan_object.prepadding = self._get_prepadding()
+        self._real_cugan_object.syncgap = syncgap
         self._load()
 
     def _load(
@@ -80,31 +80,32 @@ class Realcugan:
             if not model_path.is_dir():
                 model_path = pathlib.Path(__file__).parent / "models" / self._model
 
-                if self._realcugan_object.noise == -1:
+                if self._real_cugan_object.noise == -1:
                     param_path = (
                         model_path
-                        / f"up{self._realcugan_object.scale}x-conservative.param"
+                        / f"up{self._real_cugan_object.scale}x-conservative.param"
                     )
                     model_path = (
                         model_path
-                        / f"up{self._realcugan_object.scale}x-conservative.bin"
+                        / f"up{self._real_cugan_object.scale}x-conservative.bin"
                     )
-                elif self._realcugan_object.noise == 0:
+                elif self._real_cugan_object.noise == 0:
                     param_path = (
                         model_path
-                        / f"up{self._realcugan_object.scale}x-no-denoise.param"
+                        / f"up{self._real_cugan_object.scale}x-no-denoise.param"
                     )
                     model_path = (
-                        model_path / f"up{self._realcugan_object.scale}x-no-denoise.bin"
+                        model_path
+                        / f"up{self._real_cugan_object.scale}x-no-denoise.bin"
                     )
                 else:
                     param_path = (
                         model_path
-                        / f"up{self._realcugan_object.scale}x-denoise{self._realcugan_object.noise}x.param"
+                        / f"up{self._real_cugan_object.scale}x-denoise{self._real_cugan_object.noise}x.param"
                     )
                     model_path = (
                         model_path
-                        / f"up{self._realcugan_object.scale}x-denoise{self._realcugan_object.noise}x.bin"
+                        / f"up{self._real_cugan_object.scale}x-denoise{self._real_cugan_object.noise}x.bin"
                     )
 
         if param_path.exists() and model_path.exists():
@@ -120,7 +121,7 @@ class Realcugan:
                 model_path_str.str = wrapped.new_str_p()
                 wrapped.str_p_assign(model_path_str.str, str(model_path))
 
-            self._realcugan_object.load(param_path_str, model_path_str)
+            self._real_cugan_object.load(param_path_str, model_path_str)
         else:
             raise FileNotFoundError(f"{param_path} or {model_path} not found")
 
@@ -133,34 +134,34 @@ class Realcugan:
         """
         in_bytes = bytearray(image.tobytes())
         channels = int(len(in_bytes) / (image.width * image.height))
-        out_bytes = bytearray((self._realcugan_object.scale ** 2) * len(in_bytes))
+        out_bytes = bytearray((self._real_cugan_object.scale**2) * len(in_bytes))
 
         raw_in_image = wrapped.Image(in_bytes, image.width, image.height, channels)
         raw_out_image = wrapped.Image(
             out_bytes,
-            self._realcugan_object.scale * image.width,
-            self._realcugan_object.scale * image.height,
+            self._real_cugan_object.scale * image.width,
+            self._real_cugan_object.scale * image.height,
             channels,
         )
 
         if self._gpuid != -1:
-            self._realcugan_object.process(raw_in_image, raw_out_image)
+            self._real_cugan_object.process(raw_in_image, raw_out_image)
         else:
-            self._realcugan_object.tilesize = max(image.width, image.height)
-            self._realcugan_object.process_cpu(raw_in_image, raw_out_image)
+            self._real_cugan_object.tilesize = max(image.width, image.height)
+            self._real_cugan_object.process_cpu(raw_in_image, raw_out_image)
 
         return Image.frombytes(
             image.mode,
             (
-                self._realcugan_object.scale * image.width,
-                self._realcugan_object.scale * image.height,
+                self._real_cugan_object.scale * image.width,
+                self._real_cugan_object.scale * image.height,
             ),
             bytes(out_bytes),
         )
 
     def _get_prepadding(self) -> int:
         if self._model in ("models-se", "models-nose"):
-            return {2: 18, 3: 14, 4: 19}.get(self._realcugan_object.scale, 0)
+            return {2: 18, 3: 14, 4: 19}.get(self._real_cugan_object.scale, 0)
         else:
             raise ValueError(f'model "{self._model}" is not supported')
 
@@ -168,8 +169,8 @@ class Realcugan:
         if self._gpuid == -1:
             return 400
         else:
-            heap_budget = self._realcugan_object.get_heap_budget()
-            if self._realcugan_object.scale == 2:
+            heap_budget = self._real_cugan_object.get_heap_budget()
+            if self._real_cugan_object.scale == 2:
                 if heap_budget > 1300:
                     return 400
                 elif heap_budget > 800:
@@ -180,7 +181,7 @@ class Realcugan:
                     return 100
                 else:
                     return 32
-            elif self._realcugan_object.scale == 3:
+            elif self._real_cugan_object.scale == 3:
                 if heap_budget > 3300:
                     return 400
                 elif heap_budget > 1900:
@@ -191,7 +192,7 @@ class Realcugan:
                     return 100
                 else:
                     return 32
-            elif self._realcugan_object.scale == 4:
+            elif self._real_cugan_object.scale == 4:
                 if heap_budget > 1690:
                     return 400
                 elif heap_budget > 980:

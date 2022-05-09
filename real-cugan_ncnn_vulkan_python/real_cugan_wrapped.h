@@ -1,6 +1,6 @@
 #ifndef REALCUGAN_NCNN_VULKAN_REALCUGAN_WRAPPED_H
 #define REALCUGAN_NCNN_VULKAN_REALCUGAN_WRAPPED_H
-#include "realcugan.h"
+#include "real_cugan.h"
 
 // wrapper class of ncnn::Mat
 typedef struct Image {

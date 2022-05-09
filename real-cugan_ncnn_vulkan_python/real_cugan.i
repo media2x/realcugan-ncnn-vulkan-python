@@ -1,4 +1,4 @@
-%module realcugan_ncnn_vulkan_wrapper
+%module real_cugan_ncnn_vulkan_wrapper
 
 %include "cpointer.i"
 %include "carrays.i"
@@ -12,8 +12,8 @@
 %pointer_functions(std::wstring, wstr_p);
 
 %{
-    #include "realcugan.h"
-    #include "realcugan_wrapped.h"
+    #include "real_cugan.h"
+    #include "real_cugan_wrapped.h"
 %}
 
 class RealCUGAN
@@ -23,7 +23,7 @@ class RealCUGAN
         ~RealCUGAN();
 
     public:
-        // realcugan parameters
+        // Real-CUGAN parameters
         int noise;
         int scale;
         int tilesize;
@@ -31,4 +31,4 @@ class RealCUGAN
         int syncgap;
 };
 
-%include "realcugan_wrapped.h"
+%include "real_cugan_wrapped.h"
