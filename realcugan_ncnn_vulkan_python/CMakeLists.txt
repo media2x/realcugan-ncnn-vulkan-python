@@ -6,7 +6,9 @@ project(realcugan-ncnn-vulkan-python)
 
 cmake_minimum_required(VERSION 3.9)
 
-set(CMAKE_BUILD_TYPE Release)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE release CACHE STRING "Choose the type of build" FORCE)
+endif()
 
 option(USE_SYSTEM_NCNN "build with system libncnn" OFF)
 option(USE_SYSTEM_WEBP "build with system libwebp" OFF)
@@ -70,16 +72,16 @@ if(OPENMP_FOUND)
       "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
-# # enable global link time optimization
-# cmake_policy(SET CMP0069 NEW)
-# set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
-# include(CheckIPOSupported)
-# check_ipo_supported(RESULT ipo_supported OUTPUT ipo_supported_output)
-# if(ipo_supported)
-#   set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
-# else()
-#   message(WARNING "IPO is not supported: ${ipo_supported_output}")
-# endif()
+# enable global link time optimization
+cmake_policy(SET CMP0069 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+include(CheckIPOSupported)
+check_ipo_supported(RESULT ipo_supported OUTPUT ipo_supported_output)
+if(ipo_supported)
+  set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+else()
+  message(WARNING "IPO is not supported: ${ipo_supported_output}")
+endif()
 
 if(USE_SYSTEM_NCNN)
   set(GLSLANG_TARGET_DIR
@@ -240,6 +242,8 @@ if(NOT USE_SYSTEM_NCNN)
   option(WITH_LAYER_deconvolutiondepthwise1d "" OFF)
   option(WITH_LAYER_deconvolution3d "" OFF)
   option(WITH_LAYER_deconvolutiondepthwise3d "" OFF)
+  option(WITH_LAYER_einsum "" OFF)
+  option(WITH_LAYER_deformableconv2d "" OFF)
 
   add_subdirectory("realcugan-ncnn-vulkan/src/ncnn")
 endif()

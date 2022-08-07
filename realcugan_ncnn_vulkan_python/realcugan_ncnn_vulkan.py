@@ -159,7 +159,7 @@ class Realcugan:
         )
 
     def _get_prepadding(self) -> int:
-        if self._model in ("models-se", "models-nose"):
+        if self._model in ("models-se", "models-nose", "models-pro"):
             return {2: 18, 3: 14, 4: 19}.get(self._realcugan_object.scale, 0)
         else:
             raise ValueError(f'model "{self._model}" is not supported')

@@ -54,3 +54,21 @@ def test_default():
     input_image.close()
 
     assert percent_diff < 0.5
+
+
+def test_models_pro():
+    input_image = Image.open(images_path / "0.jpg")
+
+    upscaler = RealCUGAN(gpu_id, num_threads=num_threads, model="models-pro")
+
+    output_image = upscaler.process(input_image)
+
+    test_image = Image.open(tests_path / "0_pro.png")
+    percent_diff = _calc_image_diff(test_image, output_image)
+    logging.getLogger().info(f"%diff: {percent_diff}")
+
+    test_image.close()
+    output_image.close()
+    input_image.close()
+
+    assert percent_diff < 0.5
